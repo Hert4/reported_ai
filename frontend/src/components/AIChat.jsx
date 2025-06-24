@@ -12,65 +12,38 @@ import {
 } from "@chakra-ui/react";
 import { ArrowUp, User } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from 'react-markdown';
+import ToggleThought from "./ToggleThought";
 
-// AI simulitor
+
 const AIChat = () => {
-    const [messages, setMessages] = useState([
-        {
-            id: "1",
-            content: "Xin chào! Tôi là trợ lý AI. Tôi có thể giúp gì cho bạn hôm nay?",
-            role: "assistant",
-            timestamp: new Date(),
-        },
-    ]);
+    // Khởi tạo messages từ localStorage hoặc mảng mặc định
+    const [messages, setMessages] = useState(() => {
+        const savedMessages = localStorage.getItem("chatHistory");
+        return savedMessages
+            ? JSON.parse(savedMessages)
+            : [
+                {
+                    id: "1",
+                    content: "Xin chào! Tôi là trợ lý AI. Tôi có thể giúp gì cho bạn hôm nay?",
+                    role: "assistant",
+                    timestamp: new Date().toISOString(),
+                },
+            ];
+    });
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
 
-    // Màu sắc theo chế độ sáng/tối
     const borderColor = useColorModeValue("gray.200", "gray.700");
     const inputBg = useColorModeValue("gray.50", "gray.700");
     const assistantBg = useColorModeValue("gray.100", "gray.700");
     const userBg = useColorModeValue("blue.50", "blue.900");
 
-    // const handleSendMessage = () => {
-    //     if (input.trim() === "") return;
-
-    //     // Thêm tin nhắn người dùng
-    //     const userMessage = {
-    //         id: Date.now().toString(),
-    //         content: input,
-    //         role: "user",
-    //         timestamp: new Date(),
-    //     };
-
-    //     setMessages((prev) => [...prev, userMessage]);
-    //     setInput("");
-    //     setIsLoading(true);
-
-    //     // Giả lập phản hồi AI
-    //     setTimeout(() => {
-    //         const aiMessage = {
-    //             id: (Date.now() + 1).toString(),
-    //             content: getAIResponse(input),
-    //             role: "assistant",
-    //             timestamp: new Date(),
-    //         };
-    //         setMessages((prev) => [...prev, aiMessage]);
-    //         setIsLoading(false);
-    //     }, 1000);
-    // };
-
-    //   const getAIResponse = (userInput) => {
-    //     const responses = [
-    //         `Tôi hiểu bạn đang hỏi về: "${userInput}". Bạn có thể nói rõ hơn không?`,
-    //         "Đó là một câu hỏi thú vị. Để tôi suy nghĩ về điều đó...",
-    //         "Đây là những gì tôi biết về chủ đề này...",
-    //         "Tôi có thể giúp bạn điều đó. Bạn cần thông tin cụ thể nào?",
-    //         "Cảm ơn câu hỏi của bạn. Câu trả lời là...",
-    //     ];
-    //     return responses[Math.floor(Math.random() * responses.length)];
-    // };
+    // Lưu messages vào localStorage mỗi khi messages thay đổi
+    useEffect(() => {
+        localStorage.setItem("chatHistory", JSON.stringify(messages));
+    }, [messages]);
 
     const handleSendMessage = async () => {
         if (input.trim() === "") return;
@@ -79,7 +52,7 @@ const AIChat = () => {
             id: Date.now().toString(),
             content: input,
             role: "user",
-            timestamp: new Date(),
+            timestamp: new Date().toISOString(),
         };
 
         setMessages((prev) => [...prev, userMessage]);
@@ -98,12 +71,17 @@ const AIChat = () => {
             const data = await res.json();
             console.log("Response from AI:", data);
 
-            // Sửa phần xử lý response ở đây
+            const aiResponse = data.response || data.history[data.history.length - 1][1];
+            const thoughtMatch = aiResponse.match(/<think>([\s\S]*?)<\/think>/);
+            const thought = thoughtMatch ? thoughtMatch[1] : null;
+            const response = aiResponse.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+
             const aiMessage = {
                 id: (Date.now() + 1).toString(),
-                content: data.response || data.history[data.history.length - 1][1],
+                content: response,
+                thought: thought,
                 role: "assistant",
-                timestamp: new Date(),
+                timestamp: new Date().toISOString(),
             };
 
             setMessages((prev) => [...prev, aiMessage]);
@@ -115,14 +93,13 @@ const AIChat = () => {
                     id: (Date.now() + 1).toString(),
                     content: "Xin lỗi, đã xảy ra lỗi khi kết nối đến máy chủ.",
                     role: "assistant",
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                 },
             ]);
         } finally {
             setIsLoading(false);
         }
     };
-
 
     const handleKeyDown = (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -156,7 +133,6 @@ const AIChat = () => {
             bg={useColorModeValue('rgba(240, 240, 240, 0.8)', 'rgba(30, 30, 30, 0.8)')}
             backdropFilter={'blur(3px)'}
         >
-            {/* Header */}
             <Flex
                 p={3}
                 borderBottom="1px solid"
@@ -164,7 +140,6 @@ const AIChat = () => {
                 alignItems="center"
                 bg={useColorModeValue('rgba(240, 240, 240, 0.8)', 'rgba(30, 30, 30, 0.8)')}
                 backdropFilter={'blur(3px)'}
-
             >
                 <Avatar
                     size="sm"
@@ -175,7 +150,6 @@ const AIChat = () => {
                 <Text fontWeight="bold">Trợ lý AI</Text>
             </Flex>
 
-            {/* Khu vực chat */}
             <Box flex={1} overflowY="auto" p={4}>
                 <VStack spacing={4} align="stretch">
                     {messages.map((message) => (
@@ -200,7 +174,12 @@ const AIChat = () => {
                                         mr={2}
                                     />
                                 )}
-                                <Text>{message.content}</Text>
+                                <Box>
+                                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                                    {message.role === "assistant" && message.thought && (
+                                        <ToggleThought thought={message.thought} />
+                                    )}
+                                </Box>
                                 {message.role === "user" && (
                                     <Avatar
                                         size="xs"
@@ -212,7 +191,7 @@ const AIChat = () => {
                                 )}
                             </Flex>
                             <Text fontSize="xs" color="gray.500" mt={1}>
-                                {message.timestamp.toLocaleTimeString([], {
+                                {new Date(message.timestamp).toLocaleTimeString([], {
                                     hour: "2-digit",
                                     minute: "2-digit",
                                 })}
@@ -254,7 +233,7 @@ const AIChat = () => {
                     />
                 </HStack>
                 <Text fontSize="xs" color="gray.500" mt={1} textAlign="center">
-                    AI có thể đưa ra thông tin không chính xác
+                    AI có thể sai sót, nếu thông tin quan trọng, hãy kiểm tra lại!
                 </Text>
             </Box>
         </Box>

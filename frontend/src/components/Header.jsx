@@ -7,27 +7,35 @@ import { FaCircleUser } from "react-icons/fa6";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import ProfileCard from "./ProfileCard";
+import Folder from "./Folder";
 
 const Header = () => {
     const { colorMode, toggleColorMode } = useColorMode()
     const isLight = colorMode === 'light'
     const [showAI, setShowAI] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
-
+    const [showFolder, setShowFolder] = useState(false);
     const user = useRecoilValue(userAtom);
     const handleToggleAI = () => {
         setShowAI(prev => {
-            if (!prev) setShowProfile(false); // nếu đang mở AI thì tắt profile
+            if (!prev) setShowProfile(false);
             return !prev;
         });
     };
 
     const handleToggleProfile = () => {
         setShowProfile(prev => {
-            if (!prev) setShowAI(false); // nếu đang mở profile thì tắt AI
+            if (!prev) setShowAI(false);
             return !prev;
         });
     };
+
+    const handleToggleFolder = () => {
+        setShowFolder(prev => {
+            if (!prev) setShowFolder(false);
+            return !prev;
+        })
+    }
 
     return (
         <>
@@ -73,10 +81,12 @@ const Header = () => {
                         variant="ghost"
                         p={3}
                         borderRadius="full"
+                        transform={showFolder ? 'scale(1.2) translateY(-10px)' : 'none'}
                         _hover={{
                             transform: 'translateY(-10px) scale(1.1)',
                         }}
                         transition="all 0.2s"
+                        onClick={handleToggleFolder}
                     >
                         <Icon as={FaFolder} boxSize={8} />
                     </Button>
@@ -137,6 +147,10 @@ const Header = () => {
             )}
             {showProfile && (
                 <ProfileCard user={user} />
+            )}
+
+            {showFolder && (
+                <Folder />
             )}
         </>
     )
