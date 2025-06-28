@@ -32,9 +32,12 @@ const Header = () => {
 
     const handleToggleFolder = () => {
         setShowFolder(prev => {
-            if (!prev) setShowFolder(false);
+            if (!prev) {
+                setShowAI(false);
+                setShowProfile(false);
+            }
             return !prev;
-        })
+        });
     }
 
     return (

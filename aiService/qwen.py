@@ -4,9 +4,9 @@ from prompt.prompt import SYSTEM_PROMPT
 from m_schema.schema_engine import SchemaEngine
 import torch
 from sqlalchemy import create_engine
+from prompt.prompt import init_prompt
 
-
-SYSTEM_PROMPT = SYSTEM_PROMPT
+SYSTEM_PROMPT = init_prompt()
 PATH = os.path.dirname(os.path.abspath(__file__))
 
 

@@ -9,6 +9,8 @@ import pandas as pd
 import sqlite3
 from werkzeug.utils import secure_filename
 import uuid
+from sql.sql_handler import generate_sql, execute_sql
+from prompt.prompt import get_engine
 
 app = Flask(__name__)
 app.config["STATIC_FOLDER"] = os.path.join(os.path.dirname(__file__), "static")
@@ -104,8 +106,21 @@ def download_db(filename):
 @app.route("/chat", methods=["POST"])
 def chat():
     user_input = request.json.get("message")
+    history = request.json.get("history",[])
     response = chatbot.generate_response(user_input)
-
+    chatbot.history = history
+    sql_code = generate_sql(response)
+    if sql_code:
+        result_text = execute_sql(sql_code=sql_code, engine=get_engine())
+        print(f"Result: {result_text}")
+        summary_prompt = f"""\
+Hãy tóm tắt kết quả dưới dạng ngôn ngữ tự nhiên và minh họa như một bản tóm tắt thực sự sử dụng bảng minh họa càng tốt:
+Câu hỏi: "{user_input}"
+SQL: {sql_code}
+Kết quả truy vấn SQL: {result_text}
+Nếu kết quả trả về rỗng hay SQL không thực sự chính xác so với kết quả đó hãy từ chối trả lời và hỏi lại làm rõ yêu cầu người dùng.
+"""
+        response = chatbot.generate_response(summary_prompt)
     return jsonify(
         {
             "response": response,
@@ -115,4 +130,4 @@ def chat():
 
 
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    app.run(port=5000, host="0.0.0.0")
