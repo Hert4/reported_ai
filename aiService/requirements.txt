@@ -1,0 +1,10 @@
+flask
+flask-cors
+pandas
+transformers
+llama-index-core
+sqlalchemy
+werkzeug
+uuid
+torch
+tabulate
